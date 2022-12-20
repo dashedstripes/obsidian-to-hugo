@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
+// TODO: find a way of parsing internal obsidian links to urls in hugo
+
 interface ExportToHugoSettings {
 	hugoDir: string;
 	exportFlag: string;
