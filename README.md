@@ -8,30 +8,22 @@ My website is built using Hugo, however I do the majority of my writing in Obsid
 
 ## Usage
 
-There are two settings for this plugin:
+There is one setting for this plugin:
 
 - `Hugo Directory`
-- `Export Flag`
 
 The `Hugo Directory` is where you'd like to generate the markdown files. This is likely to be your `posts` folder in the Hugo file structure.
 
-To flag your content as exportable, use whatever you defined as `Export Flag` as the very first text in your Obsidian note.
-
-For example, imagine you've set your `Export Flag` to `~export`.
-
+The tool knows to export your content if your note begins with hugo frontmatter. For example:
 
 ```markdown
 This content will not be exported.
 ```
 
 ```markdown
-~export
+---
+title: My Title
+---
 
 This content *will* be exported.
 ```
-
-If you're having any trouble, ensure that the very first text in your note matches your export flag, and that you also have a new line **after** your export flag.
-
-## Additional Information
-
-The tool slugifies your obsidian note title to form the URL for the post. It also generates basic hugo frontmatter that uses the obsidian note title.
