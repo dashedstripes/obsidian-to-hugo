@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { App, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, Plugin, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
 
 // TODO: find a way of parsing internal obsidian links to urls in hugo
 
@@ -24,6 +24,18 @@ function getCurrentDate(): string {
 	const yyyy = today.getFullYear();
 
 	return `${yyyy}-${mm}-${dd}`;
+}
+
+function replaceInternalLinks(content: string) {
+	/**
+	 * for each instance of "[[Note Name]]"", we'll replace it with "[Note Name](/posts/note-name)"
+	 * 
+	 * this means we will take the text in-between the `[[X]]`, sluggify X, 
+	 * and create a markdown link in the format [X](`/posts/slugify(X)`)
+	 */
+	return content.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
+		return `[${p1}](/posts/${slugify(p1)})`
+	});
 }
 
 export default class ExportToHugo extends Plugin {
@@ -83,6 +95,8 @@ export default class ExportToHugo extends Plugin {
 			let noteTitle = currentNoteName.split('.')[0];
 
 			let newText = content.join('\n');
+
+			newText = replaceInternalLinks(newText);
 
 			newText = 
 `---
