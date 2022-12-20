@@ -1,29 +1,18 @@
 import * as fs from 'fs';
-import { App, Notice, Plugin, PluginSettingTab, Setting, SliderComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 // TODO: find a way of parsing internal obsidian links to urls in hugo
 
 interface ExportToHugoSettings {
 	hugoDir: string;
-	exportFlag: string;
 }
 
 const DEFAULT_SETTINGS: ExportToHugoSettings = {
 	hugoDir: '/',
-	exportFlag: '~export'
 }
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-}
-
-function getCurrentDate(): string {
-	const today = new Date();
-	const dd = String(today.getDate()).padStart(2, '0');
-	const mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
-	const yyyy = today.getFullYear();
-
-	return `${yyyy}-${mm}-${dd}`;
 }
 
 function replaceInternalLinks(content: string) {
@@ -44,10 +33,8 @@ export default class ExportToHugo extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
 
-		// this gets called on save
 		this.registerEvent(this.app.vault.on('modify', async (e) => {
 			this.onModify(e.name);
     }));
@@ -55,10 +42,6 @@ export default class ExportToHugo extends Plugin {
 		this.registerEvent(this.app.vault.on('delete', async (e) => {
 			this.onDelete(e.name);
     }));
-	}
-
-	onunload() {
-
 	}
 
 	async loadSettings() {
@@ -79,43 +62,32 @@ export default class ExportToHugo extends Plugin {
 	}
 
 	async onModify(currentNoteName: string) {
-		// 1. get the contents of the current note
 		const currentNote = this.app.workspace.getActiveFile();
-		if(!currentNote) return; // Nothing Open
+		if(!currentNote) return;
 
 		let text = await this.app.vault.read(currentNote);
 
-		// 2. create a copy of this node in the hugo directory
-
-		if(text.substring(0, this.settings.exportFlag.length) === this.settings.exportFlag) {
-			
-			let content = text.split('\n');
-			content = content.slice(2);
-
-			let noteTitle = currentNoteName.split('.')[0];
-
-			let newText = content.join('\n');
-
-			newText = replaceInternalLinks(newText);
-
-			newText = 
-`---
-title: ${noteTitle}
-publishdate: ${getCurrentDate()}
----
-
-` + newText;
-
-			try {
-				fs.writeFileSync(`${this.settings.hugoDir}/${slugify(noteTitle)}.md`, newText);
-			} catch (err) {
-				console.error(err);
-			}
+		// if first characters aren't hugo frontmatter, we won't export this note
+		if(text.substring(0, 3) !== '---') {
+			return;
 		}
-	}
 
-	shouldSaveFile(): boolean {
-		return false;
+		const matchedTitle = text.match(/title: (.*)/);
+
+		// set a default title incase the regex above fails.
+		let title = currentNoteName.split('.')[0]
+
+		if(matchedTitle) {
+			title = matchedTitle[1];
+		}
+
+		const newText = replaceInternalLinks(text);
+
+		try {
+			fs.writeFileSync(`${this.settings.hugoDir}/${slugify(title)}.md`, newText);
+		} catch (err) {
+			console.error(err);
+		}
 	}
 }
 
@@ -145,15 +117,5 @@ class SettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}));
 
-		new Setting(containerEl)
-			.setName('Export Flag')
-			.setDesc('What keyword would you like to use as your export flag?')
-			.addText(text => text
-				.setPlaceholder('~export')
-				.setValue(this.plugin.settings.exportFlag)
-				.onChange(async (value) => {
-					this.plugin.settings.exportFlag = value;
-					await this.plugin.saveSettings();
-				}));
 	}
 }
