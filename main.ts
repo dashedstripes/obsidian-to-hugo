@@ -28,6 +28,10 @@ export default class ExportToHugo extends Plugin {
 		this.registerEvent(this.app.vault.on('modify', async (e) => {
 			this.onModify(e.name);
     }));
+
+		this.registerEvent(this.app.vault.on('delete', async (e) => {
+			this.onDelete(e.name);
+    }));
 	}
 
 	onunload() {
@@ -40,6 +44,15 @@ export default class ExportToHugo extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	async onDelete(currentNoteName: string) {
+		let noteTitle = currentNoteName.split('.')[0];
+		try {
+			fs.unlinkSync(`${this.settings.hugoDir}/${slugify(noteTitle)}.md`)
+		} catch(err) {
+			console.error(err)
+		}
 	}
 
 	async onModify(currentNoteName: string) {
