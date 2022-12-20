@@ -22,8 +22,10 @@ This content will not be exported.
 
 ```markdown
 ---
-title: My Title
+publishdate: 2022-12-20
 ---
 
 This content *will* be exported.
+
+You should **not** include a title as your hugo frontmatter as this is generated automatically from the Obsidian note title. Manually adding a title may cause issues with note linking.
 ```

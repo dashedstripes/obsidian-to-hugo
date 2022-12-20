@@ -72,16 +72,13 @@ export default class ExportToHugo extends Plugin {
 			return;
 		}
 
-		const matchedTitle = text.match(/title: (.*)/);
+		const title = currentNoteName.split('.')[0]
+		const content = text.split('\n');
 
-		// set a default title incase the regex above fails.
-		let title = currentNoteName.split('.')[0]
+		// we're going to append the obsidian title as the first element in our frontmatter
+		content.splice(1, 0, `title: ${title}`);
 
-		if(matchedTitle) {
-			title = matchedTitle[1];
-		}
-
-		const newText = replaceInternalLinks(text);
+		const newText = replaceInternalLinks(content.join('\n'));
 
 		try {
 			fs.writeFileSync(`${this.settings.hugoDir}/${slugify(title)}.md`, newText);
