@@ -65,14 +65,23 @@ export default class ExportToHugo extends Plugin {
 		const currentNote = this.app.workspace.getActiveFile();
 		if(!currentNote) return;
 
+		const title = currentNoteName.split('.')[0]
 		let text = await this.app.vault.read(currentNote);
 
 		// if first characters aren't hugo frontmatter, we won't export this note
 		if(text.substring(0, 3) !== '---') {
+			// let's delete the file if it exists
+			try {
+				if (fs.existsSync(`${this.settings.hugoDir}/${slugify(title)}.md`)) {
+					this.onDelete(currentNoteName);
+				}
+			} catch(err) {
+				console.error(err)
+			}
+
 			return;
 		}
 
-		const title = currentNoteName.split('.')[0]
 		const content = text.split('\n');
 
 		// we're going to append the obsidian title as the first element in our frontmatter
