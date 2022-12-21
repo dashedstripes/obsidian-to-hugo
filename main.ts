@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import replaceInternalLinks from 'utils/replace-internal-links';
+import slugify from 'utils/slugify';
 
 // TODO: find a way of parsing internal obsidian links to urls in hugo
 
@@ -9,22 +11,6 @@ interface ExportToHugoSettings {
 
 const DEFAULT_SETTINGS: ExportToHugoSettings = {
 	hugoDir: '/',
-}
-
-function slugify(text: string) {
-  return text.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-}
-
-function replaceInternalLinks(content: string) {
-	/**
-	 * for each instance of "[[Note Name]]"", we'll replace it with "[Note Name](/posts/note-name)"
-	 * 
-	 * this means we will take the text in-between the `[[X]]`, sluggify X, 
-	 * and create a markdown link in the format [X](`/posts/slugify(X)`)
-	 */
-	return content.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
-		return `[${p1}](/posts/${slugify(p1)})`
-	});
 }
 
 export default class ExportToHugo extends Plugin {
