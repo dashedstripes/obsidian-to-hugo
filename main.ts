@@ -1,9 +1,8 @@
 import * as fs from 'fs';
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import isExportable from 'utils/is-exportable';
 import replaceInternalLinks from 'utils/replace-internal-links';
 import slugify from 'utils/slugify';
-
-// TODO: find a way of parsing internal obsidian links to urls in hugo
 
 interface ExportToHugoSettings {
 	hugoDir: string;
@@ -55,7 +54,7 @@ export default class ExportToHugo extends Plugin {
 		let text = await this.app.vault.read(currentNote);
 
 		// if first characters aren't hugo frontmatter, we won't export this note
-		if(text.substring(0, 3) !== '---') {
+		if(!isExportable(text)) {
 			// let's delete the file if it exists
 			try {
 				if (fs.existsSync(`${this.settings.hugoDir}/${slugify(title)}.md`)) {
