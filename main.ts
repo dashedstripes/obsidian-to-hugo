@@ -5,13 +5,11 @@ import replaceInternalLinks from 'utils/replace-internal-links';
 import slugify from 'utils/slugify';
 
 interface ExportToHugoSettings {
-	hugoDir: string;
-	exportUrlBase: string;
+	hugoExportDir: string;
 }
 
 const DEFAULT_SETTINGS: ExportToHugoSettings = {
-	hugoDir: '/',
-	exportUrlBase: '/posts'
+	hugoExportDir: '/',
 }
 
 export default class ExportToHugo extends Plugin {
@@ -42,7 +40,7 @@ export default class ExportToHugo extends Plugin {
 	async onDelete(currentNoteName: string) {
 		let noteTitle = currentNoteName.split('.')[0];
 		try {
-			fs.unlinkSync(`${this.settings.hugoDir}/${slugify(noteTitle)}.md`)
+			fs.unlinkSync(`${this.settings.hugoExportDir}/${slugify(noteTitle)}.md`)
 		} catch(err) {
 			console.error(err)
 		}
@@ -59,7 +57,7 @@ export default class ExportToHugo extends Plugin {
 		if(!isExportable(text)) {
 			// let's delete the file if it exists
 			try {
-				if (fs.existsSync(`${this.settings.hugoDir}/${slugify(title)}.md`)) {
+				if (fs.existsSync(`${this.settings.hugoExportDir}/${slugify(title)}.md`)) {
 					this.onDelete(currentNoteName);
 				}
 			} catch(err) {
@@ -72,12 +70,11 @@ export default class ExportToHugo extends Plugin {
 		const content = text.split('\n');
 
 		// we're going to append the obsidian title as the first element in our frontmatter
-		content.splice(1, 0, `title: ${title}`);
-
-		const newText = replaceInternalLinks(content.join('\n'), this.settings.exportUrlBase);
+		const splitPath = this.settings.hugoExportDir.split('/');
+		const newText = replaceInternalLinks(content.join('\n'), splitPath[splitPath.length - 1]);
 
 		try {
-			fs.writeFileSync(`${this.settings.hugoDir}/${slugify(title)}.md`, newText);
+			fs.writeFileSync(`${this.settings.hugoExportDir}/${slugify(title)}.md`, newText);
 		} catch (err) {
 			console.error(err);
 		}
@@ -100,13 +97,13 @@ class SettingTab extends PluginSettingTab {
 		containerEl.createEl('h2', {text: 'Settings for Hugo Export.'});
 
 		new Setting(containerEl)
-			.setName('Hugo Directory')
-			.setDesc('Where would you like generated files to go?')
+			.setName('Hugo Export Directory')
+			.setDesc('Where would you like to save your files?')
 			.addText(text => text
 				.setPlaceholder('/Users/Library/etc')
-				.setValue(this.plugin.settings.hugoDir)
+				.setValue(this.plugin.settings.hugoExportDir)
 				.onChange(async (value) => {
-					this.plugin.settings.hugoDir = value;
+					this.plugin.settings.hugoExportDir = value;
 					await this.plugin.saveSettings();
 				}));
 

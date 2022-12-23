@@ -10,9 +10,9 @@ function replaceInternalLinks(content: string, path: string) {
 	return content.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
 		if(p1.includes('|')) {
 			const p = p1.split('|');
-			return `[${p[1]}](${path}/${slugify(p[0])})`	
+			return `[${p[1]}](/${path}/${slugify(p[0])})`	
 		} else {
-			return `[${p1}](${path}/${slugify(p1)})`
+			return `[${p1}](/${path}/${slugify(p1)})`
 		}
 	});
 }
