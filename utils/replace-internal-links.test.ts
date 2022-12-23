@@ -15,4 +15,10 @@ test('should return original string if no links are found', () => {
 	expect(replaceInternalLinks("no links here")).toBe("no links here");
 });
 
+test('should convert internal links with aliases', () => {
+  expect(replaceInternalLinks(`[[test|altered name]]`)).toBe(`[altered name](/posts/test)`)
+  expect(replaceInternalLinks(`[[hello world|changed name]]`)).toBe(`[changed name](/posts/hello-world)`)
+  expect(replaceInternalLinks(`[[hello world | changed name]]`)).toBe(`[ changed name](/posts/hello-world-)`)
+})
+
 // I was going to write some test cases for symbols, but those are covered by slugify.
