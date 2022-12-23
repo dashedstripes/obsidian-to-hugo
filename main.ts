@@ -68,8 +68,9 @@ export default class ExportToHugo extends Plugin {
 		}
 
 		const content = text.split('\n');
-
 		// we're going to append the obsidian title as the first element in our frontmatter
+		content.splice(1, 0, `title: ${title}`);
+		
 		const splitPath = this.settings.hugoExportDir.split('/');
 		const newText = replaceInternalLinks(content.join('\n'), splitPath[splitPath.length - 1]);
 
