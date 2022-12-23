@@ -1,6 +1,6 @@
 import slugify from "./slugify";
 
-function replaceInternalLinks(content: string) {
+function replaceInternalLinks(content: string, path: string) {
 	/**
 	 * for each instance of "[[Note Name]]"", we'll replace it with "[Note Name](/posts/note-name)"
 	 * 
@@ -10,9 +10,9 @@ function replaceInternalLinks(content: string) {
 	return content.replace(/\[\[(.*?)\]\]/g, (match, p1) => {
 		if(p1.includes('|')) {
 			const p = p1.split('|');
-			return `[${p[1]}](/posts/${slugify(p[0])})`	
+			return `[${p[1]}](${path}/${slugify(p[0])})`	
 		} else {
-			return `[${p1}](/posts/${slugify(p1)})`
+			return `[${p1}](${path}/${slugify(p1)})`
 		}
 	});
 }

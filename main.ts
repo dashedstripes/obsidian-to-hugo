@@ -6,10 +6,12 @@ import slugify from 'utils/slugify';
 
 interface ExportToHugoSettings {
 	hugoDir: string;
+	exportUrlBase: string;
 }
 
 const DEFAULT_SETTINGS: ExportToHugoSettings = {
 	hugoDir: '/',
+	exportUrlBase: '/posts'
 }
 
 export default class ExportToHugo extends Plugin {
@@ -72,7 +74,7 @@ export default class ExportToHugo extends Plugin {
 		// we're going to append the obsidian title as the first element in our frontmatter
 		content.splice(1, 0, `title: ${title}`);
 
-		const newText = replaceInternalLinks(content.join('\n'));
+		const newText = replaceInternalLinks(content.join('\n'), this.settings.exportUrlBase);
 
 		try {
 			fs.writeFileSync(`${this.settings.hugoDir}/${slugify(title)}.md`, newText);
