@@ -38,6 +38,14 @@ export default class ExportToHugo extends Plugin {
 	}
 
 	async onDelete(currentNoteName: string) {
+		/**
+		 * test this.
+		 * 
+		 * - if hugo export dir is blank
+		 * - if note title is blank
+		 * - if split fails
+		 * - if file doesn't exist
+		 */
 		let noteTitle = currentNoteName.split('.')[0];
 		try {
 			fs.unlinkSync(`${this.settings.hugoExportDir}/${slugify(noteTitle)}.md`)
