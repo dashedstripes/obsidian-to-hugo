@@ -1,6 +1,9 @@
 import slugify from "./slugify";
 
 function replaceInternalLinks(content: string, path: string) {
+	if(path.at(0) === '/') {
+		throw 'path cannot start with /'
+	}
 	/**
 	 * for each instance of "[[Note Name]]"", we'll replace it with "[Note Name](/posts/note-name)"
 	 * 

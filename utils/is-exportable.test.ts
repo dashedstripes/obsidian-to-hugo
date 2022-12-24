@@ -12,3 +12,8 @@ test('should not export if incomplete frontmatter', () => {
 publishdate: 2022-12-20
 `)).toBe(false);
 });
+
+test('should export even if no frontmatter attributes added', () => {
+  expect(isExportable(`---
+---`)).toBe(true)
+})
