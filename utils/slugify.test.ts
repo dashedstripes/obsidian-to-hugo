@@ -8,8 +8,8 @@ test('should remove periods', () => {
   expect(slugify("hello.world")).toBe("helloworld");
 });
 
-test('should convert spaces to hyphens', () => {
-  expect(slugify("hello      world")).toBe("hello------world");
+test('should convert spaces to single hyphen', () => {
+  expect(slugify("hello      world")).toBe("hello-world");
 });
 
 test('should strip all symbols', () => {
@@ -20,3 +20,6 @@ test('should convert caps to lowercase', () => {
   expect(slugify(`ABC`)).toBe(`abc`);
 });
 
+test('should reduce hyphens to single hyphen', () => {
+  expect(slugify('1 - test')).toBe('1-test')
+})
