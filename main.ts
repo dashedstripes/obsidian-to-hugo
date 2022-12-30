@@ -1,5 +1,7 @@
 import * as fs from 'fs';
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice } from 'obsidian';
+import addHugoMetadata from 'utils/add-hugo-metadata';
+import getTodayDate from 'utils/get-today-date';
 import isExportable from 'utils/is-exportable';
 import replaceInternalLinks from 'utils/replace-internal-links';
 import slugify from 'utils/slugify';
@@ -19,6 +21,22 @@ export default class ExportToHugo extends Plugin {
 		await this.loadSettings();
 
 		this.addSettingTab(new SettingTab(this.app, this));
+
+		this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor, view) => {
+        menu.addItem((item) => {
+          item
+            .setTitle("Add Hugo Metadata")
+            .setIcon("document")
+            .onClick(async () => {
+							const data = addHugoMetadata(view.data, { publishdate: getTodayDate() });
+							if(data) {
+								editor.setValue(data);
+							}
+            });
+        });
+      })
+    );
 
 		this.registerEvent(this.app.vault.on('modify', async (e) => {
 			this.onModify(e.name);
