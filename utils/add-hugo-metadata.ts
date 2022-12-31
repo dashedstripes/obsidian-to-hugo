@@ -7,7 +7,7 @@ function generateHugoMetadata(metadata: { [key: string]: string }) {
     data += `${props[i]}: ${metadata[props[i]]}\n`
   }
   
-  return `---\n${data}---\n`
+  return `---\n${data}---\n\n`
 }
 
 function addHugoMetadata(text: string, hugoMetadata: { [key: string]: string }) {
