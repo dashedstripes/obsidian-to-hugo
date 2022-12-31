@@ -11,7 +11,7 @@ function generateHugoMetadata(metadata: { [key: string]: string }) {
 }
 
 function addHugoMetadata(text: string, hugoMetadata: { [key: string]: string }) {
-  if(!text || !hugoMetadata) {
+  if(!hugoMetadata) {
     return null;
   }
 
