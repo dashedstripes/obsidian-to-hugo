@@ -24,8 +24,14 @@ export default class ExportToHugo extends Plugin {
 		return fs.readFileSync(path, 'utf-8')
 	} 
 
-	renameFile(oldPath: string, newPath: string) {
-		return fs.rename(oldPath, newPath, () => console.log('renamed file', oldPath, newPath));
+	async readActiveFile() {
+		const currentNote = this.app.workspace.getActiveFile();
+		if(!currentNote) return;
+		return await this.app.vault.read(currentNote);
+	}
+
+	renameFile(oldPath: string, newPath: string, callback: () => void) {
+		return fs.rename(oldPath, newPath, callback);
 	}
 
 	writeFile(path: string, content: string) {
@@ -40,8 +46,9 @@ export default class ExportToHugo extends Plugin {
 		return fs.existsSync(path);
 	}
 
-	isFileExportable(path: string) {
-		return isExportable(path, this.readFile)
+	isLocalFileExportable(path: string) {
+		const text = this.readFile(path);
+		return isExportable(text);
 	}
 
 	async onload() {
@@ -66,40 +73,49 @@ export default class ExportToHugo extends Plugin {
     );
 
 		this.registerEvent(this.app.vault.on('rename', async (e, oldPath) => {
-			if(this.isFileExportable(oldPath)) {
-				modifyTitle(
-					oldPath, 
-					e.name, 
-					// @ts-ignore
-					e.basename,
-					this.readFile,
-					this.renameFile,
-					this.writeFile,
-				);
+			const text = await this.readActiveFile() || '';
+			const oldTitle = oldPath.split('.')[0];
+			const newTitle = e.name.split('.')[0]
+
+			if(isExportable(text)) {
+				const content = modifyTitle(text, e.name.split('.')[0]);
+	
+				this.renameFile(
+					`${this.settings.hugoExportDir}/${slugify(oldTitle)}.md`,
+					`${this.settings.hugoExportDir}/${slugify(newTitle)}.md`,
+					() => {
+						this.writeFile(
+							`${this.settings.hugoExportDir}/${slugify(newTitle)}.md`,
+							content
+						);
+					}
+				)
 			}
+			
     }));
 
-		this.registerEvent(this.app.vault.on('modify', async (e) => {
-			if(this.isFileExportable(e.path)) {
-				const content = this.readFile(e.path);
+		this.registerEvent(this.app.vault.on('modify', async (e: any) => {
+			const text = await this.readActiveFile() || '';
+
+			if(isExportable(text)) {
 				const hugoPath = this.settings.hugoExportDir.split('/').last()
 
-				let updatedContent = processInternalLinks(content, (link) => {
+				let updatedContent = processInternalLinks(text, (link) => {
 					return transformObsidianLink(link, (title) => `/${hugoPath}/${slugify(title)}`)
 				});
 
 				// @ts-ignore
-				updatedContent = appendHugoTitle(content, e.basename);
-				this.writeFile(e.path, updatedContent);
+				updatedContent = appendHugoTitle(updatedContent, e.basename);
+				this.writeFile(`${this.settings.hugoExportDir}/${slugify(e.basename)}.md`, updatedContent);
 			} else {
-				if(this.fileExists(`${this.settings.hugoExportDir}/${e.name}`)) {
-					handleDelete(`${this.settings.hugoExportDir}/${e.name}`, this.deleteFile);
+				if(this.fileExists(`${this.settings.hugoExportDir}/${slugify(e.basename)}.md`)) {
+					handleDelete(`${this.settings.hugoExportDir}/${slugify(e.basename)}.md`, this.deleteFile);
 				}
 			}
     }));
 
-		this.registerEvent(this.app.vault.on('delete', async (e) => {
-			handleDelete(`${this.settings.hugoExportDir}/${e.name}`, this.deleteFile);
+		this.registerEvent(this.app.vault.on('delete', async (e: any) => {
+			handleDelete(`${this.settings.hugoExportDir}/${slugify(e.basename)}.md`, this.deleteFile);
     }));
 	}
 

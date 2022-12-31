@@ -1,7 +1,5 @@
-function isExportable(path: string, readFile: (path: string) => string) {
+function isExportable(text: string) {
   // we want to check that frontmatter has been created properly, not just the first line
-  const text = readFile(path);
-
   // if the first line isn't ---, return early;
   if(text.substring(0, 3) !== '---') {
     return false;
