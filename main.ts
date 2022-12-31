@@ -38,6 +38,12 @@ export default class ExportToHugo extends Plugin {
       })
     );
 
+		this.registerEvent(this.app.vault.on('rename', async (e, oldName) => {
+			const oldNoteTitle = oldName.split('.')[0];
+			const newNoteTitle = e.name.split('.')[0];
+			this.onModifyTitle(oldNoteTitle, newNoteTitle);
+    }));
+
 		this.registerEvent(this.app.vault.on('modify', async (e) => {
 			this.onModify(e.name);
     }));
@@ -55,6 +61,7 @@ export default class ExportToHugo extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+	// TODO: test this
 	async onDelete(currentNoteName: string) {
 		/**
 		 * test this.
@@ -72,6 +79,46 @@ export default class ExportToHugo extends Plugin {
 		}
 	}
 
+	// TODO: test this.
+	/**
+	 * - if new note title is existing note, what do we name it?
+	 */
+	async onModifyTitle(oldNoteTitle: string, newNoteTitle: string) {
+		const currentNote = this.app.workspace.getActiveFile();
+		if(!currentNote) return;
+
+		const text = await this.app.vault.read(currentNote);
+
+		if(isExportable(text)) {
+
+			try {
+				// e.name and oldName are both file names, i.e Test.md
+				fs.rename(
+					`${this.settings.hugoExportDir}/${slugify(oldNoteTitle)}.md`,
+					`${this.settings.hugoExportDir}/${slugify(newNoteTitle)}.md`,
+					() => {
+						console.log('note title updated', oldNoteTitle, newNoteTitle);
+					}
+				)
+			} catch (err) {
+				console.error(err);
+			}
+
+			// after renaming, we need to change the hugo title
+			const content = text.split('\n');
+			content.splice(1, 0, `title: ${newNoteTitle}`);
+			const newText = content.join('\n');
+
+			try {
+				fs.writeFileSync(`${this.settings.hugoExportDir}/${slugify(newNoteTitle)}.md`, newText);
+			} catch (err) {
+				console.error(err);
+			}
+		}
+
+	}
+
+	// TODO: test this
 	async onModify(currentNoteName: string) {
 		const currentNote = this.app.workspace.getActiveFile();
 		if(!currentNote) return;
