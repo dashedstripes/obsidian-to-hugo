@@ -1,11 +1,12 @@
 import * as fs from 'fs';
 import { App, Plugin, PluginSettingTab, Setting, Notice } from 'obsidian';
 import addHugoMetadata from 'utils/add-hugo-metadata';
+import appendHugoTitle from 'utils/append-hugo-title';
 import getTodayDate from 'utils/get-today-date';
 import handleDelete from 'utils/handle-delete';
 import isExportable from 'utils/is-exportable';
 import modifyTitle from 'utils/modify-title';
-import replaceInternalLinks from 'utils/replace-internal-links';
+import { processInternalLinks, transformObsidianLink } from 'utils/process-internal-links';
 import slugify from 'utils/slugify';
 
 interface ExportToHugoSettings {
@@ -18,6 +19,30 @@ const DEFAULT_SETTINGS: ExportToHugoSettings = {
 
 export default class ExportToHugo extends Plugin {
 	settings: ExportToHugoSettings;
+
+	readFile(path: string) {
+		return fs.readFileSync(path, 'utf-8')
+	} 
+
+	renameFile(oldPath: string, newPath: string) {
+		return fs.rename(oldPath, newPath, () => console.log('renamed file', oldPath, newPath));
+	}
+
+	writeFile(path: string, content: string) {
+		return fs.writeFileSync(path, content);
+	}
+
+	deleteFile(path: string) {
+	  return fs.unlinkSync(path);	
+	}
+
+	fileExists(path: string) {
+		return fs.existsSync(path);
+	}
+
+	isFileExportable(path: string) {
+		return isExportable(path, this.readFile)
+	}
 
 	async onload() {
 		await this.loadSettings();
@@ -40,39 +65,41 @@ export default class ExportToHugo extends Plugin {
       })
     );
 
-		this.registerEvent(this.app.vault.on('rename', async (e, oldName) => {
-			const oldNoteTitle = oldName.split('.')[0];
-			const newNoteTitle = e.name.split('.')[0];
-
-			const currentNote = this.app.workspace.getActiveFile();
-			if(!currentNote) return;
-
-			const text = await this.app.vault.read(currentNote);
-
-			const updateFile = (oldPath: string, newPath: string) => fs.rename(oldPath, newPath, () => console.log('renamed file', oldPath, newPath));
-			const writeFile = (path: string, content: string) => fs.writeFileSync(path, content);
-
-			modifyTitle(
-				text, 
-				isExportable(text),
-				`${this.settings.hugoExportDir}/${slugify(oldNoteTitle)}.md`,
-				`${this.settings.hugoExportDir}/${slugify(newNoteTitle)}.md`,
-				newNoteTitle, 
-				updateFile, 
-				writeFile
-			);
+		this.registerEvent(this.app.vault.on('rename', async (e, oldPath) => {
+			if(this.isFileExportable(oldPath)) {
+				modifyTitle(
+					oldPath, 
+					e.name, 
+					// @ts-ignore
+					e.basename,
+					this.readFile,
+					this.renameFile,
+					this.writeFile,
+				);
+			}
     }));
 
 		this.registerEvent(this.app.vault.on('modify', async (e) => {
-			this.onModify(e.name);
+			if(this.isFileExportable(e.path)) {
+				const content = this.readFile(e.path);
+				const hugoPath = this.settings.hugoExportDir.split('/').last()
+
+				let updatedContent = processInternalLinks(content, (link) => {
+					return transformObsidianLink(link, (title) => `/${hugoPath}/${slugify(title)}`)
+				});
+
+				// @ts-ignore
+				updatedContent = appendHugoTitle(content, e.basename);
+				this.writeFile(e.path, updatedContent);
+			} else {
+				if(this.fileExists(`${this.settings.hugoExportDir}/${e.name}`)) {
+					handleDelete(`${this.settings.hugoExportDir}/${e.name}`, this.deleteFile);
+				}
+			}
     }));
 
 		this.registerEvent(this.app.vault.on('delete', async (e) => {
-			let noteTitle = e.name.split('.')[0];
-			const path = `${this.settings.hugoExportDir}/${slugify(noteTitle)}.md`;
-			const deleteFile = (path: string) => fs.unlinkSync(path);
-
-			handleDelete(path, deleteFile);
+			handleDelete(`${this.settings.hugoExportDir}/${e.name}`, this.deleteFile);
     }));
 	}
 
@@ -82,45 +109,6 @@ export default class ExportToHugo extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-
-	// TODO: test this
-	async onModify(currentNoteName: string) {
-		const currentNote = this.app.workspace.getActiveFile();
-		if(!currentNote) return;
-
-		const title = currentNoteName.split('.')[0]
-		let text = await this.app.vault.read(currentNote);
-
-		// if first characters aren't hugo frontmatter, we won't export this note
-		if(!isExportable(text)) {
-			// let's delete the file if it exists
-			try {
-				if (fs.existsSync(`${this.settings.hugoExportDir}/${slugify(title)}.md`)) {
-					handleDelete(
-						`${this.settings.hugoExportDir}/${slugify(title)}.md`, 
-						(path: string) => fs.unlinkSync(path)
-					);
-				}
-			} catch(err) {
-				console.error(err)
-			}
-
-			return;
-		}
-
-		const content = text.split('\n');
-		// we're going to append the obsidian title as the first element in our frontmatter
-		content.splice(1, 0, `title: ${title}`);
-		
-		const splitPath = this.settings.hugoExportDir.split('/');
-		const newText = replaceInternalLinks(content.join('\n'), splitPath[splitPath.length - 1]);
-
-		try {
-			fs.writeFileSync(`${this.settings.hugoExportDir}/${slugify(title)}.md`, newText);
-		} catch (err) {
-			console.error(err);
-		}
 	}
 }
 
