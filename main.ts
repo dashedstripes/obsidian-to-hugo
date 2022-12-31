@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import { App, Plugin, PluginSettingTab, Setting, Notice } from 'obsidian';
 import addHugoMetadata from 'utils/add-hugo-metadata';
 import getTodayDate from 'utils/get-today-date';
+import handleDelete from 'utils/handle-delete';
 import isExportable from 'utils/is-exportable';
 import modifyTitle from 'utils/modify-title';
 import replaceInternalLinks from 'utils/replace-internal-links';
@@ -67,7 +68,11 @@ export default class ExportToHugo extends Plugin {
     }));
 
 		this.registerEvent(this.app.vault.on('delete', async (e) => {
-			this.onDelete(e.name);
+			let noteTitle = e.name.split('.')[0];
+			const path = `${this.settings.hugoExportDir}/${slugify(noteTitle)}.md`;
+			const deleteFile = (path: string) => fs.unlinkSync(path);
+
+			handleDelete(path, deleteFile);
     }));
 	}
 
@@ -77,24 +82,6 @@ export default class ExportToHugo extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-
-	// TODO: test this
-	async onDelete(currentNoteName: string) {
-		/**
-		 * test this.
-		 * 
-		 * - if hugo export dir is blank
-		 * - if note title is blank
-		 * - if split fails
-		 * - if file doesn't exist
-		 */
-		let noteTitle = currentNoteName.split('.')[0];
-		try {
-			fs.unlinkSync(`${this.settings.hugoExportDir}/${slugify(noteTitle)}.md`)
-		} catch(err) {
-			console.error(err)
-		}
 	}
 
 	// TODO: test this
@@ -110,7 +97,10 @@ export default class ExportToHugo extends Plugin {
 			// let's delete the file if it exists
 			try {
 				if (fs.existsSync(`${this.settings.hugoExportDir}/${slugify(title)}.md`)) {
-					this.onDelete(currentNoteName);
+					handleDelete(
+						`${this.settings.hugoExportDir}/${slugify(title)}.md`, 
+						(path: string) => fs.unlinkSync(path)
+					);
 				}
 			} catch(err) {
 				console.error(err)
