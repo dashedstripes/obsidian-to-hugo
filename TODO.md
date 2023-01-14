@@ -1,0 +1,2 @@
+- might be cool to only export content that exists _after_ the metadata.
+  - this way we can write drafts and finished notes in the same note whilst only exporting the finished note
